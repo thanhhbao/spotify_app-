@@ -39,23 +39,27 @@ A modern Flutter music streaming application inspired by Spotify, featuring user
 
 <table>
   <tr>
-    <td><img src="assets/screenshots/get_started.png" width="200"/></td>
-    <td><img src="assets/screenshots/choose_mode.png" width="200"/></td>
-    <td><img src="assets/screenshots/settings.png" width="200"/></td>
+    <td><img src="assets/images/splash.png" width="200"/></td>
+    <td><img src="assets/images/signuporsignin.png" width="200"/></td>
+    <td><img src="assets/images/sign in.png" width="200"/></td>
+    <td><img src="assets/images/sign up.png" width="200"/></td>
   </tr>
   <tr>
     <td align="center">Get Started</td>
-    <td align="center">Choose Mode</td>
-    <td align="center">Settings</td>
+    <td align="center">Sign up or Sign in</td>
+    <td align="center">Sign In</td>
+    <td align="center">Sign Up</td>
+   
   </tr>
   <tr>
-    <td><img src="assets/screenshots/home.png" width="200"/></td>
-    <td><img src="assets/screenshots/profile.png" width="200"/></td>
+    <td><img src="assets/images/home.png" width="200"/></td>
+    <td><img src="assets/images/profile.png" width="200"/></td>
+     <td><img src="assets/images/settings.png" width="200"/></td>
   </tr>
   <tr>
     <td align="center">Home</td>
-    <td align="center">Music Player</td>
     <td align="center">Profile</td>
+    <td align="center">Settings</td>
   </tr>
 </table>
 
@@ -152,8 +156,8 @@ lib/
 
 1. **Clone the repository**
    ```bash
-   git clone https://github.com/yourusername/spotify_app.git
-   cd spotify_app
+   git clone https://github.com/yourusername/spotify_app-.git
+   cd spotify_app-
    ```
 
 2. **Install dependencies**
