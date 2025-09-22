@@ -1,0 +1,92 @@
+platform :ios, '16.0'      # >= 16.0 để hợp với Firebase/Firestore mới
+
+ENV['COCOAPODS_DISABLE_STATS'] = 'true'
+
+project 'Runner', {
+  'Debug' => :debug,
+  'Profile' => :release,
+  'Release' => :release,
+}
+
+def flutter_root
+  generated_xcode_build_settings_path = File.expand_path(File.join('..', 'Flutter', 'Generated.xcconfig'), __FILE__)
+  unless File.exist?(generated_xcode_build_settings_path)
+    raise "#{generated_xcode_build_settings_path} must exist. If you're running pod install manually, make sure flutter pub get is executed first"
+  end
+  File.foreach(generated_xcode_build_settings_path) do |line|
+    matches = line.match(/FLUTTER_ROOT\=(.*)/)
+    return matches[1].strip if matches
+  end
+  raise "FLUTTER_ROOT not found in #{generated_xcode_build_settings_path}. Try deleting Generated.xcconfig, then run flutter pub get"
+end
+
+require File.expand_path(File.join('packages', 'flutter_tools', 'bin', 'podhelper'), flutter_root)
+
+flutter_ios_podfile_setup
+
+target 'Runner' do
+  # Nên dùng static linkage cho plugin Swift hiện nay
+  use_frameworks! :linkage => :static
+
+  # BẮT BUỘC: trỏ Pod 'Flutter' vào thư mục ios/Flutter (Flutter.xcframework)
+  pod 'Flutter', :path => 'Flutter'
+
+  flutter_install_all_ios_pods File.dirname(File.realpath(__FILE__))
+
+  target 'RunnerTests' do
+    inherit! :search_paths
+  end
+end
+
+post_install do |installer|
+  # Giữ thiết lập mặc định bổ sung từ Flutter (EXCLUDED_ARCHS, bitcode,…)
+  installer.pods_project.targets.each do |t|
+    flutter_additional_ios_build_settings(t) if defined? flutter_additional_ios_build_settings
+
+    t.build_configurations.each do |config|
+      # 1) Dọn các cờ -G* và -w từng gây lỗi link
+      %w[OTHER_CFLAGS OTHER_CPLUSPLUSFLAGS OTHER_LDFLAGS].each do |k|
+        val = config.build_settings[k]
+        tokens = val.is_a?(String) ? val.split(/\s+/) : Array(val).flatten
+        tokens = tokens.reject { |tok| tok.start_with?('-G') }
+        tokens = tokens.reject { |tok| tok == '-w' }
+        config.build_settings[k] = tokens
+      end
+
+      # 2) Ép target iOS cho mọi Pod
+      config.build_settings['IPHONEOS_DEPLOYMENT_TARGET'] = '16.0'
+
+      # 3) Header search để plugin có thể tìm 'Flutter/Flutter.h'
+      hs = Array(config.build_settings['HEADER_SEARCH_PATHS']) + [
+        '$(inherited)',
+        '$(PODS_ROOT)/Headers/Public',
+        '$(PODS_ROOT)/Headers/Public/Flutter',
+        # Trỏ trực tiếp tới Headers trong ios/Flutter/Flutter.xcframework
+        '$(SRCROOT)/Flutter/Flutter.xcframework/ios-arm64_x86_64-simulator/Flutter.framework/Headers',
+        '$(SRCROOT)/Flutter/Flutter.xcframework/ios-arm64/Flutter.framework/Headers'
+      ]
+      config.build_settings['HEADER_SEARCH_PATHS'] = hs.uniq
+
+      # 4) Framework search để Swift tìm thấy module 'Flutter'
+      fs = Array(config.build_settings['FRAMEWORK_SEARCH_PATHS']) + [
+        '$(inherited)',
+        '$(SRCROOT)/Flutter',
+        '$(SRCROOT)/Flutter/Flutter.xcframework/ios-arm64_x86_64-simulator',
+        '$(SRCROOT)/Flutter/Flutter.xcframework/ios-arm64'
+      ]
+      config.build_settings['FRAMEWORK_SEARCH_PATHS'] = fs.uniq
+
+      config.build_settings['OTHER_SWIFT_FLAGS'] = ['$(inherited)']
+      config.build_settings['CLANG_ALLOW_NON_MODULAR_INCLUDES_IN_FRAMEWORK_MODULES'] = 'YES'
+    end
+  end
+
+  # Đồng bộ IPHONEOS_DEPLOYMENT_TARGET cho chính project Runner (aggregate)
+  installer.aggregate_targets.each do |aggregate|
+    aggregate.user_project.targets.each do |target|
+      target.build_configurations.each do |config|
+        config.build_settings['IPHONEOS_DEPLOYMENT_TARGET'] = '16.0'
+      end
+    end
+  end
+end
